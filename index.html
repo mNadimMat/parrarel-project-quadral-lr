@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+    <script src="./node_modules/web3/dist/web3.min.js"></script>
+
+</head>
+<body>
+<div class="container">
+
+    <span id="countIns"></span>
+    <h2 id="instructor"></h2>
+    <span id="insTrans"></span>
+    <hr>
+    <img id="loader" src="https://loading.io/spinners/double-ring/lg.double-ring-spinner.gif">
+    <label for="idLand" class="col-lg-2 control-label">Land ID in DB</label>
+    <input id="idLand" type="text">
+
+	<label for="infoHash" class="col-lg-2 control-label">Informations hash</label>
+    <input id="infoHash" type="text">
+
+
+    <label for="docHash" class="col-lg-2 control-label">Documents hash</label>
+    <input id="docHash" type="text">
+
+    <button id="button">Update Instructor</button>
+    <div id="trans"></div>
+    <h5 id="all"></h5>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+
+<script>
+    if (typeof web3 !== 'undefined') {
+        web3 = new Web3(web3.currentProvider);
+    } else {
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    }
+
+    web3.eth.defaultAccount = web3.eth.accounts[0];
+
+    var Contract = web3.eth.contract([
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "properties",
+		"outputs": [
+			{
+				"name": "idInDB",
+				"type": "string"
+			},
+			{
+				"name": "hashedInfos",
+				"type": "string"
+			},
+			{
+				"name": "hashDocs",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "MyAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "idInDB",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "hashedInfos",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "hashDocs",
+				"type": "string"
+			}
+		],
+		"name": "LogReturn",
+		"type": "event"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_address",
+				"type": "address"
+			},
+			{
+				"name": "_idInDB",
+				"type": "string"
+			},
+			{
+				"name": "_hashedInfos",
+				"type": "string"
+			},
+			{
+				"name": "_hashDocs",
+				"type": "string"
+			}
+		],
+		"name": "add",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]);
+
+    var MyContract = Contract.at('0x53b97045ac8e9afb4c2006e48be2e6e4bb4f0083');
+
+
+    var Event = MyContract.LogReturn({}, {fromBlock: 0, toBlock: 'latest'});
+   
+	var rep=[];
+    Event.get((error, logs) => {
+    if(!error){
+    var t= "All Assets  </br> ";
+    console.log(logs);
+ 	logs.reverse().forEach(function(log){
+ 		if(rep.indexOf((log.args.idInDB).toString())==-1){
+ 		t=t+log.args.idInDB + ' '+log.args.hashedInfos+' (' + log.args.MyAddress +')</br> ';
+		rep.push((log.args.idInDB).toString());
+
+				logs.reverse().forEach(function(history){
+					if((history.args.idInDB).toString() === (log.args.idInDB).toString() && history!==log)
+					{
+						t=t+'<small style="color:red;">'+history.args.idInDB + ' '+history.args.hashedInfos+' (' + history.args.MyAddress +')</small></br> ';
+					}
+				});
+
+		}
+
+ 	});
+
+ 	}
+ 	else
+ 		console.log("error");
+ 	$("#all").html(t);
+ 	console.log(rep);
+	})
+
+
+
+
+var myHash ;
+
+web3.eth.filter({address: "0x53b97045ac8e9afb4c2006e48be2e6e4bb4f0083"}, function(error, result){
+  if (error){
+    return console.log(error)
+    }
+   
+    else{
+
+console.log('something happened here');
+
+   if (result.transactionHash === myHash){
+   	console.log('my transaction was validated');
+   	$('#loader').hide();
+   }
+    }
+    
+});
+
+
+   $("#button").click(function() {
+          
+           MyContract.add(web3.eth.defaultAccount, $("#idLand").val(),$("#infoHash").val(),$("#docHash").val(),function(err, res){
+           		
+           		
+               if (err) {
+               	 $("#loader").hide();
+                  console.log(err);
+               }
+               else{
+               	  $("#loader").show();
+               	  myHash = res;
+               }
+               
+           });
+       });
+</script>
+
+</body>
+</html>
+
